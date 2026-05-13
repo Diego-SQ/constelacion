@@ -1127,7 +1127,18 @@ document.getElementById('formSave').addEventListener('click', () => {
   }
 });
 
-
+// ── Lógica de Eliminar en la Nube ──
+document.getElementById('memoryDelete').addEventListener('click', () => {
+  if (confirm("¿Seguro que querés borrar esta estrella de la constelación?")) {
+    playSound('delete');
+    
+    // BORRAR DE LA NUBE
+    db.collection("memories").doc(memoryActivaId.toString()).delete().then(() => {
+      closeMemory();
+    });
+  }
+});
+  
 // ═══════════════════════════════════════════
 // NUEVO: NAVEGACIÓN ESPACIAL (PAN & ZOOM)
 // ═══════════════════════════════════════════
