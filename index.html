@@ -1135,48 +1135,7 @@ document.getElementById('formSave').addEventListener('click', () => {
     });
   }
 });
-// ── Lógica de Eliminar y Backup ──
 
-document.getElementById('memoryDelete').addEventListener('click', () => {
-  if (confirm("¿Seguro que querés borrar esta estrella de la constelación?")) {
-    playSound('delete');
-    
-    // BORRAR DE LA NUBE
-    db.collection("memories").doc(memoryActivaId.toString()).delete().then(() => {
-      closeMemory();
-    });
-  }
-});
-
-document.getElementById('btnExport').addEventListener('click', () => {
-  if (memories.length === 0) return alert("El universo está vacío. ¡Agregá recuerdos primero!");
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(memories));
-  const a = document.createElement('a');
-  a.setAttribute("href", dataStr);
-  a.setAttribute("download", "nuestro_universo.json");
-  a.click();
-});
-
-document.getElementById('btnImport').addEventListener('click', () => document.getElementById('fileImport').click());
-
-document.getElementById('fileImport').addEventListener('change', function(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const imported = JSON.parse(e.target.result);
-      if (Array.isArray(imported)) {
-        memories = imported;
-        save();
-        renderConstellation();
-        alert("¡Universo restaurado!");
-      }
-    } catch (err) { alert("Error al cargar el archivo."); }
-  };
-  reader.readAsText(file);
-  this.value = ''; 
-});
 
 // ═══════════════════════════════════════════
 // NUEVO: NAVEGACIÓN ESPACIAL (PAN & ZOOM)
