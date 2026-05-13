@@ -633,18 +633,20 @@ function playSound(type) {
   gainNode.connect(audioCtx.destination);
   
   const now = audioCtx.currentTime;
-  
-  if (type === 'click') {
-    // Sonido: Campanita suave (Onda Senoidal)
+
+    if (type === 'click') {
+    // Sonido: Gota de luz (estilo marimba/gota)
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(880, now); // Frecuencia base A5
-    gainNode.gain.setValueAtTime(0.1, now);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+    osc.frequency.setValueAtTime(600, now);
+    osc.frequency.exponentialRampToValueAtTime(300, now + 0.1); // Caída rápida de tono
+    gainNode.gain.setValueAtTime(0.15, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.15); // Se apaga muy rápido
     osc.start(now);
-    osc.stop(now + 0.5);
+    osc.stop(now + 0.15);
     
-    // Vibración: Pulso corto
-    if(navigator.vibrate) navigator.vibrate(30);
+    // Vibración: Muy sutil
+    if(navigator.vibrate) navigator.vibrate(15);
+  }
     
   } else if (type === 'create') {
     // Sonido: Ascenso mágico de "nueva estrella"
