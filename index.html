@@ -1007,7 +1007,7 @@ function openForm(memoryToEdit = null) {
   initAudio(); // Iniciar contexto de audio en la primera interacción
   if (memoryToEdit) {
     editandoId = memoryToEdit.id;
-    document.getElementById('formHeaderTitle').innerText = "✦ &nbsp;Editar recuerdo";
+    document.getElementById('formHeaderTitle').innerHTML = "✦ &nbsp;Editar recuerdo";
     document.getElementById('fTitle').value = memoryToEdit.title;
     document.getElementById('fDate').value = memoryToEdit.date;
     document.getElementById('fType').value = memoryToEdit.starType || 'normal';
@@ -1025,7 +1025,7 @@ function openForm(memoryToEdit = null) {
     }
   } else {
     editandoId = null;
-    document.getElementById('formHeaderTitle').innerText = "✦ &nbsp;Nuevo recuerdo";
+    document.getElementById('formHeaderTitle').innerHTML = "✦ &nbsp;Nuevo recuerdo";
     document.getElementById('fTitle').value = '';
     document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
     document.getElementById('fType').value = 'normal';
