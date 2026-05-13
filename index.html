@@ -635,17 +635,17 @@ function playSound(type) {
   const now = audioCtx.currentTime;
 
     if (type === 'click') {
-    // Sonido: Destello (Arpegio de dos notas)
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(1046.50, now); // Nota Do (C6)
-    osc.frequency.setValueAtTime(1318.51, now + 0.08); // Salta a Mi (E6)
-    gainNode.gain.setValueAtTime(0.05, now);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+    // Sonido: Pulso sci-fi (Onda triangular con ataque suave)
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(523.25, now); // Nota Do (C5)
+    gainNode.gain.setValueAtTime(0, now);
+    gainNode.gain.linearRampToValueAtTime(0.06, now + 0.05); // Entra suave (Ataque)
+    gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.4); // Se desvanece
     osc.start(now);
     osc.stop(now + 0.4);
     
-    // Vibración: Doble pulso muy cortito
-    if(navigator.vibrate) navigator.vibrate([10, 30, 10]); 
+    // Vibración: Vibración media
+    if(navigator.vibrate) navigator.vibrate(20);
     
   } else if (type === 'create') {
     // Sonido: Ascenso mágico de "nueva estrella"
