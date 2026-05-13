@@ -170,20 +170,21 @@ body {
   line-height: 1.9;
 }
 
-/* ── Memory viewer (bottom sheet) ── */
+/* ── Memory viewer (Modal Centrado) ── */
 .memory-overlay {
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(0, 0, 10, 0.65);
+  background: rgba(0, 0, 10, 0.75);
   display: flex;
-  align-items: flex-end;
+  align-items: center; /* ESTO ES LO QUE LO CENTRA EN LA PANTALLA */
   justify-content: center;
+  padding: 20px; /* Margen para que no toque los bordes en el celular */
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.35s ease;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 .memory-overlay.open {
   opacity: 1;
@@ -191,47 +192,51 @@ body {
 }
 .memory-sheet {
   width: 100%;
-  max-width: 520px;
-  background: var(--card-bg);
-  border: 0.5px solid rgba(167,139,250,0.25);
-  border-bottom: none;
-  border-radius: 22px 22px 0 0;
-  transform: translateY(100%);
-  transition: transform 0.42s cubic-bezier(0.32, 0.72, 0, 1);
+  max-width: 420px; /* Más angosto, formato retrato/Polaroid */
+  background: rgba(10, 4, 28, 0.65); /* Cristal esmerilado */
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  border-radius: 16px; /* Bordes redondeados completos */
+  transform: scale(0.92) translateY(10px); /* Efecto de aparición con zoom */
+  transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
   overflow: hidden;
   position: relative;
   max-height: 88vh;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 25px 50px rgba(0,0,0,0.6), inset 0 0 20px rgba(167, 139, 250, 0.15);
 }
 .memory-overlay.open .memory-sheet {
-  transform: translateY(0);
+  transform: scale(1) translateY(0);
 }
 .sheet-handle {
-  position: absolute;
-  top: 10px; left: 50%;
-  transform: translateX(-50%);
-  width: 36px; height: 3px;
-  border-radius: 2px;
-  background: rgba(167,139,250,0.3);
-  z-index: 2;
+  display: none; /* Ya no hace falta la rayita de arrastrar */
 }
+
+/* ── Estilo Foto Polaroid ── */
 .memory-photo-wrap {
   width: 100%;
   flex-shrink: 0;
   overflow: hidden;
   position: relative;
+  padding: 12px 12px 0 12px; /* Margen interior para simular el marco blanco */
 }
 .memory-photo {
   width: 100%;
-  max-height: 260px;
+  max-height: 280px;
   object-fit: cover;
   display: block;
+  border-radius: 8px; /* Redondeo leve interno de la foto */
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
 }
 .memory-no-photo {
-  width: 100%;
-  height: 120px;
-  background: linear-gradient(135deg, #0a0030 0%, #1a0550 50%, #08002a 100%);
+  width: calc(100% - 24px);
+  margin: 12px auto 0;
+  height: 140px;
+  background: linear-gradient(135deg, rgba(10,0,48,0.5) 0%, rgba(26,5,80,0.5) 50%, rgba(8,0,42,0.5) 100%);
+  border: 1px dashed rgba(167,139,250,0.3);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -242,14 +247,10 @@ body {
   font-family: 'Cormorant Garamond', serif;
 }
 .memory-photo-overlay {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 80px;
-  background: linear-gradient(to top, var(--card-bg), transparent);
-  pointer-events: none;
+  display: none; /* Eliminamos el degradado sobre la foto */
 }
 .memory-body {
-  padding: 18px 22px 36px;
+  padding: 20px 24px 28px;
   overflow-y: auto;
   flex: 1;
 }
@@ -285,51 +286,30 @@ body {
   color: rgba(210, 190, 255, 0.68);
   font-weight: 300;
 }
-.memory-close-btn {
-  position: absolute;
-  top: 14px; right: 16px;
-  background: rgba(0,0,0,0.45);
-  border: 0.5px solid rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.6);
-  font-size: 14px;
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  z-index: 10;
-  transition: all 0.2s;
-}
-.memory-close-btn:hover { background: rgba(120,80,220,0.4); color: white; }
 
-/* ── Botones de Acción (Eliminar y Editar) ── */
-.memory-delete-btn, .memory-edit-btn {
+/* ── Botones de Acción sobre la foto ── */
+.memory-close-btn, .memory-delete-btn, .memory-edit-btn {
   position: absolute;
-  top: 14px;
-  background: rgba(0, 0, 0, 0.45);
-  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  top: 20px;
+  background: rgba(0, 0, 10, 0.55);
+  border: 0.5px solid rgba(255,255,255,0.15);
   color: white;
-  width: 28px; height: 28px;
+  width: 30px; height: 30px;
   border-radius: 50%;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   z-index: 10;
   transition: all 0.2s;
+  backdrop-filter: blur(4px); /* Botones tipo cristal sobre la foto */
 }
+.memory-close-btn { right: 20px; color: rgba(255,255,255,0.7); }
+.memory-close-btn:hover { background: rgba(120,80,220,0.6); color: white; transform: scale(1.1); }
 
-.memory-delete-btn { 
-  left: 16px; 
-  background: rgba(200, 50, 50, 0.45);
-  border-color: rgba(255,100,100,0.3);
-}
-.memory-delete-btn:hover { background: rgba(220, 40, 40, 0.8); }
+.memory-delete-btn { left: 20px; background: rgba(200, 50, 50, 0.45); border-color: rgba(255,100,100,0.3); }
+.memory-delete-btn:hover { background: rgba(220, 40, 40, 0.8); transform: scale(1.1); }
 
-.memory-edit-btn { 
-  left: 52px; 
-  background: rgba(167, 139, 250, 0.45);
-  border-color: rgba(167,139,250,0.3);
-  font-size: 12px;
-}
-.memory-edit-btn:hover { background: rgba(167, 139, 250, 0.8); }
+.memory-edit-btn { left: 60px; background: rgba(167, 139, 250, 0.45); border-color: rgba(167,139,250,0.3); font-size: 13px; }
+.memory-edit-btn:hover { background: rgba(167, 139, 250, 0.8); transform: scale(1.1); }
 
 /* ── Add form overlay ── */
 .form-overlay {
