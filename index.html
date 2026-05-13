@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Nuestra Constelación ✦</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#020008">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Nunito:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --star-gold: #f5e6c8;
+  --line-color: rgba(147, 197, 253, 0.28);
+  --purple: rgba(167, 139, 250, 1);
+  --purple-dim: rgba(167, 139, 250, 0.35);
+  --card-bg: rgba(4, 0, 20, 0.94);
+}
+
+body {
+  background: #020008;
+  min-height: 100vh;
+  overflow: hidden;
+  font-family: 'Nunito', sans-serif;
+  color: white;
+  position: relative;
+  cursor: default;
+}
+
+#bgCanvas {
+  position: fixed;
+  inset: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+}
+
+.milkyway {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background:
+    radial-gradient(ellipse 90% 50% at 50% 65%, rgba(80, 40, 160, 0.07) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 35% at 25% 35%, rgba(40, 80, 180, 0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 25% at 75% 70%, rgba(160, 40, 120, 0.04) 0%, transparent 55%);
+  pointer-events: none;
+}
+
+#constellationSvg {
+  position: fixed;
+  inset: 0;
+  width: 100%; height: 100%;
+  z-index: 2;
+  overflow: visible;
+  cursor: grab;
+}
+#constellationSvg:active {
+  cursor: grabbing;
+}
+#universeMap {
+  transition: transform 0.05s ease-out;
+}
+
+/* ── Title & Backup Controls ── */
+.title-area {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  text-align: center;
+  z-index: 10;
+  pointer-events: none;
+  padding: 18px 20px 0;
+}
+.title-area h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(18px, 5vw, 28px);
+  font-weight: 300;
+  letter-spacing: 0.25em;
+  color: #e8dcff;
+  text-shadow: 0 0 40px rgba(167,139,250,0.6);
+}
+.title-area p {
+  font-size: 10px;
+  letter-spacing: 0.35em;
+  color: rgba(190, 165, 240, 0.45);
+  margin-top: 5px;
+  font-weight: 300;
+}
+
+.backup-controls {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  pointer-events: all;
+}
+.backup-controls button {
+  background: rgba(167,139,250,0.15);
+  border: 1px solid rgba(167,139,250,0.3);
+  border-radius: 50%;
+  width: 32px; height: 32px;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.backup-controls button:hover {
+  background: rgba(167,139,250,0.5);
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(167,139,250,0.4);
+}
+
+/* ── Bottom bar ── */
+.bottom-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px 28px;
+  pointer-events: none;
+}
+.count-badge {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px;
+  color: rgba(190, 165, 240, 0.5);
+  letter-spacing: 0.12em;
+  font-style: italic;
+}
+.add-btn {
+  width: 54px; height: 54px;
+  border-radius: 50%;
+  border: 1px solid rgba(167,139,250,0.45);
+  background: rgba(8, 0, 35, 0.85);
+  color: #c4a8ff;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(12px);
+  transition: all 0.3s ease;
+  box-shadow: 0 0 24px rgba(120, 80, 220, 0.3), inset 0 0 12px rgba(120,80,220,0.1);
+  pointer-events: all;
+}
+.add-btn:hover {
+  background: rgba(100, 60, 200, 0.35);
+  box-shadow: 0 0 36px rgba(140, 90, 255, 0.55), inset 0 0 16px rgba(140,90,255,0.15);
+  transform: scale(1.08) rotate(45deg);
+  color: #e2d0ff;
+}
+.add-btn:active { transform: scale(0.97) rotate(45deg); }
+
+/* ── Hint text ── */
+.hint {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 5;
+  pointer-events: none;
+  transition: opacity 0.5s;
+}
+.hint p {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(14px, 3.5vw, 18px);
+  color: rgba(190, 165, 240, 0.35);
+  font-style: italic;
+  letter-spacing: 0.08em;
+  line-height: 1.9;
+}
+
+/* ── Memory viewer (bottom sheet) ── */
+.memory-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 10, 0.65);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.memory-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+.memory-sheet {
+  width: 100%;
+  max-width: 520px;
+  background: var(--card-bg);
+  border: 0.5px solid rgba(167,139,250,0.25);
+  border-bottom: none;
+  border-radius: 22px 22px 0 0;
+  transform: translateY(100%);
+  transition: transform 0.42s cubic-bezier(0.32, 0.72, 0, 1);
+  overflow: hidden;
+  position: relative;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+.memory-overlay.open .memory-sheet {
+  transform: translateY(0);
+}
+.sheet-handle {
+  position: absolute;
+  top: 10px; left: 50%;
+  transform: translateX(-50%);
+  width: 36px; height: 3px;
+  border-radius: 2px;
+  background: rgba(167,139,250,0.3);
+  z-index: 2;
+}
+.memory-photo-wrap {
+  width: 100%;
+  flex-shrink: 0;
+  overflow: hidden;
+  position: relative;
+}
+.memory-photo {
+  width: 100%;
+  max-height: 260px;
+  object-fit: cover;
+  display: block;
+}
+.memory-no-photo {
+  width: 100%;
+  height: 120px;
+  background: linear-gradient(135deg, #0a0030 0%, #1a0550 50%, #08002a 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.memory-no-photo span {
+  font-size: 36px;
+  color: rgba(167,139,250,0.4);
+  font-family: 'Cormorant Garamond', serif;
+}
+.memory-photo-overlay {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 80px;
+  background: linear-gradient(to top, var(--card-bg), transparent);
+  pointer-events: none;
+}
+.memory-body {
+  padding: 18px 22px 36px;
+  overflow-y: auto;
+  flex: 1;
+}
+.memory-date-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.memory-date-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: rgba(167,139,250,0.7);
+  flex-shrink: 0;
+}
+.memory-date {
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  color: rgba(167,139,250,0.75);
+  text-transform: uppercase;
+}
+.memory-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(22px, 5vw, 28px);
+  font-weight: 400;
+  color: #ede0ff;
+  margin-bottom: 10px;
+  line-height: 1.2;
+}
+.memory-desc {
+  font-size: 14px;
+  line-height: 1.8;
+  color: rgba(210, 190, 255, 0.68);
+  font-weight: 300;
+}
+.memory-close-btn {
+  position: absolute;
+  top: 14px; right: 16px;
+  background: rgba(0,0,0,0.45);
+  border: 0.5px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.6);
+  font-size: 14px;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10;
+  transition: all 0.2s;
+}
+.memory-close-btn:hover { background: rgba(120,80,220,0.4); color: white; }
+
+/* ── Botones de Acción (Eliminar y Editar) ── */
+.memory-delete-btn, .memory-edit-btn {
+  position: absolute;
+  top: 14px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10;
+  transition: all 0.2s;
+}
+
+.memory-delete-btn { 
+  left: 16px; 
+  background: rgba(200, 50, 50, 0.45);
+  border-color: rgba(255,100,100,0.3);
+}
+.memory-delete-btn:hover { background: rgba(220, 40, 40, 0.8); }
+
+.memory-edit-btn { 
+  left: 52px; 
+  background: rgba(167, 139, 250, 0.45);
+  border-color: rgba(167,139,250,0.3);
+  font-size: 12px;
+}
+.memory-edit-btn:hover { background: rgba(167, 139, 250, 0.8); }
+
+/* ── Add form overlay ── */
+.form-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  background: rgba(0, 0, 8, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.form-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+.form-card {
+  width: 100%;
+  max-width: 440px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: rgba(6, 0, 28, 0.97);
+  border: 0.5px solid rgba(167,139,250,0.35);
+  border-radius: 18px;
+  padding: 26px 22px;
+  transform: scale(0.94) translateY(12px);
+  transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.form-overlay.open .form-card { transform: scale(1) translateY(0); }
+.form-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 22px;
+}
+.form-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 21px;
+  font-weight: 300;
+  color: #e0d0ff;
+  letter-spacing: 0.06em;
+}
+.form-x {
+  background: none;
+  border: none;
+  color: rgba(190,165,240,0.5);
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px;
+}
+.form-x:hover { color: rgba(190,165,240,0.9); }
+.form-group { margin-bottom: 15px; }
+.form-label {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.25em;
+  color: rgba(167,139,250,0.65);
+  text-transform: uppercase;
+  margin-bottom: 7px;
+  font-weight: 600;
+}
+.form-input {
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border: 0.5px solid rgba(167,139,250,0.25);
+  border-radius: 9px;
+  color: #ede0ff;
+  padding: 10px 13px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 14px;
+  font-weight: 300;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+.form-input:focus {
+  border-color: rgba(167,139,250,0.6);
+  background: rgba(120,80,220,0.06);
+}
+.form-input::placeholder { color: rgba(255,255,255,0.2); }
+textarea.form-input { resize: vertical; min-height: 82px; line-height: 1.6; }
+input[type=date].form-input { color-scheme: dark; }
+
+.upload-area {
+  border: 1px dashed rgba(167,139,250,0.28);
+  border-radius: 10px;
+  padding: 18px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  background: rgba(255,255,255,0.02);
+}
+.upload-area:hover {
+  border-color: rgba(167,139,250,0.55);
+  background: rgba(120,80,220,0.05);
+}
+.upload-area input {
+  position: absolute; inset: 0;
+  opacity: 0; cursor: pointer;
+  width: 100%; height: 100%;
+}
+.upload-area .upload-hint { font-size: 12px; color: rgba(190,165,240,0.5); line-height: 1.7; }
+.upload-area .upload-icon { font-size: 22px; margin-bottom: 4px; display: block; }
+.upload-preview {
+  width: 100%; max-height: 150px;
+  object-fit: cover; border-radius: 7px;
+  margin-top: 10px; display: none;
+}
+
+.form-btns { display: flex; gap: 10px; margin-top: 22px; }
+.btn-cancel {
+  flex: 1; padding: 11px 8px;
+  border: 0.5px solid rgba(167,139,250,0.25);
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(190,165,240,0.55);
+  font-size: 13px;
+  cursor: pointer;
+  font-family: 'Nunito', sans-serif;
+  transition: all 0.2s;
+}
+.btn-cancel:hover { border-color: rgba(167,139,250,0.5); color: rgba(190,165,240,0.9); }
+.btn-save {
+  flex: 2; padding: 11px 8px;
+  border: 0.5px solid rgba(167,139,250,0.5);
+  border-radius: 10px;
+  background: rgba(110, 65, 210, 0.32);
+  color: #e8d8ff;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  transition: all 0.2s;
+}
+.btn-save:hover { background: rgba(130, 80, 230, 0.5); box-shadow: 0 0 20px rgba(120,70,220,0.3); }
+.btn-save:active { transform: scale(0.98); }
+
+/* ── Star animations ── */
+@keyframes twinkleStar {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+@keyframes pulseRing {
+  0% { r: 10; opacity: 0.4; }
+  100% { r: 22; opacity: 0; }
+}
+@keyframes starBorn {
+  0% { opacity: 0; transform: scale(0) rotate(0deg); }
+  60% { opacity: 1; transform: scale(1.4) rotate(180deg); }
+  100% { opacity: 1; transform: scale(1) rotate(360deg); }
+}
+@keyframes lineDraw {
+  from { stroke-dashoffset: 300; }
+  to { stroke-dashoffset: 0; }
+}
+
+/* Scrollbar in form */
+.form-card::-webkit-scrollbar { width: 4px; }
+.form-card::-webkit-scrollbar-thumb { background: rgba(167,139,250,0.3); border-radius: 2px; }
+.memory-body::-webkit-scrollbar { width: 3px; }
+.memory-body::-webkit-scrollbar-thumb { background: rgba(167,139,250,0.2); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+<div class="milkyway"></div>
+
+<svg id="constellationSvg" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glowMid" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="lineGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  
+  <g id="universeMap">
+    <g id="linesGroup"></g>
+    <g id="starsGroup"></g>
+  </g>
+</svg>
+
+<div class="title-area">
+  <h1>✦ &nbsp; Nuestra Constelación &nbsp; ✦</h1>
+  <p>cada estrella es un momento nuestro</p>
+  
+  <div class="backup-controls">
+    <button id="btnExport" title="Descargar Universo">💾</button>
+    <button id="btnImport" title="Cargar Universo">📂</button>
+    <input type="file" id="fileImport" accept=".json" style="display: none;">
+  </div>
+</div>
+
+<div id="emptyHint" class="hint">
+  <p>El universo está esperando<br>tus primeros recuerdos.<br><br>
+  <span style="font-size:11px; letter-spacing:0.3em; font-style:normal; opacity:0.6">TOCÁ + PARA AGREGAR</span></p>
+</div>
+
+<div class="bottom-bar">
+  <span class="count-badge" id="countBadge"></span>
+  <button class="add-btn" id="addBtn" aria-label="Agregar recuerdo">+</button>
+</div>
+
+<div class="memory-overlay" id="memoryOverlay" role="dialog" aria-modal="true" aria-label="Detalle del recuerdo">
+  <div class="memory-sheet">
+    <div class="sheet-handle"></div>
+    <button class="memory-close-btn" id="memoryClose" aria-label="Cerrar">✕</button>
+    
+    <button class="memory-delete-btn" id="memoryDelete" aria-label="Eliminar">🗑️</button>
+    <button class="memory-edit-btn" id="memoryEdit" aria-label="Editar">✏️</button>
+    
+    <div class="memory-photo-wrap" id="memoryPhotoWrap"></div>
+    <div class="memory-body">
+      <div class="memory-date-line">
+        <div class="memory-date-dot"></div>
+        <span class="memory-date" id="memDate"></span>
+      </div>
+      <h2 class="memory-title" id="memTitle"></h2>
+      <p class="memory-desc" id="memDesc"></p>
+    </div>
+  </div>
+</div>
+
+<div class="form-overlay" id="formOverlay" role="dialog" aria-modal="true" aria-label="Agregar recuerdo">
+  <div class="form-card">
+    <div class="form-header">
+      <h2 class="form-title" id="formHeaderTitle">✦ &nbsp;Nuevo recuerdo</h2>
+      <button class="form-x" id="formX" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="fTitle">Nombre del momento</label>
+      <input class="form-input" type="text" id="fTitle" placeholder="Ej: Primera cita en el café">
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label" for="fDate">Fecha</label>
+      <input class="form-input" type="date" id="fDate">
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label" for="fType">Magnitud del Momento</label>
+      <select class="form-input" id="fType">
+        <option value="normal">Estrella Estándar (Cita linda, detalle)</option>
+        <option value="special">Gigante Azul (Momento muy especial)</option>
+        <option value="epic">Supernova (Hito inolvidable, aniversario)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="fDesc">Descripción</label>
+      <textarea class="form-input" id="fDesc" placeholder="Contá qué pasó ese día, cómo fue, qué sintieron..."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Foto (opcional)</label>
+      <div class="upload-area" id="uploadArea">
+        <input type="file" accept="image/*" id="fPhoto" aria-label="Subir foto">
+        <div id="uploadPlaceholder">
+          <span class="upload-icon">📷</span>
+          <p class="upload-hint">Tocá para elegir una foto<br><span style="font-size:10px; opacity:0.6">JPG, PNG, WEBP · máx. recomendado 5 MB</span></p>
+        </div>
+        <img class="upload-preview" id="uploadPreview" alt="Vista previa">
+      </div>
+    </div>
+    <div class="form-btns">
+      <button class="btn-cancel" id="formCancel">Cancelar</button>
+      <button class="btn-save" id="formSave">Agregar estrella ✦</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// MOTOR DE AUDIO Y VIBRACIÓN (SINTETIZADOR)
+// ═══════════════════════════════════════════
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+
+function initAudio() {
+  if (!audioCtx) audioCtx = new AudioContext();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function playSound(type) {
+  initAudio();
+  if (!audioCtx) return;
+  
+  const osc = audioCtx.createOscillator();
+  const gainNode = audioCtx.createGain();
+  osc.connect(gainNode);
+  gainNode.connect(audioCtx.destination);
+  
+  const now = audioCtx.currentTime;
+  
+  if (type === 'click') {
+    // Sonido: Campanita suave (Onda Senoidal)
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, now); // Frecuencia base A5
+    gainNode.gain.setValueAtTime(0.1, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+    osc.start(now);
+    osc.stop(now + 0.5);
+    
+    // Vibración: Pulso corto
+    if(navigator.vibrate) navigator.vibrate(30);
+    
+  } else if (type === 'create') {
+    // Sonido: Ascenso mágico de "nueva estrella"
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(440, now); 
+    osc.frequency.exponentialRampToValueAtTime(880, now + 0.4); 
+    gainNode.gain.setValueAtTime(0, now);
+    gainNode.gain.linearRampToValueAtTime(0.1, now + 0.1);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+    osc.start(now);
+    osc.stop(now + 1.5);
+    
+    // Vibración: Patrón de redoble
+    if(navigator.vibrate) navigator.vibrate([30, 50, 30, 50, 80]);
+    
+  } else if (type === 'delete') {
+    // Sonido: Desvanecimiento grave
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(200, now);
+    osc.frequency.exponentialRampToValueAtTime(50, now + 0.5); 
+    gainNode.gain.setValueAtTime(0.1, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+    osc.start(now);
+    osc.stop(now + 0.5);
+    
+    // Vibración: Golpe sordo
+    if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
+  }
+}
+
+// ═══════════════════════════════════════════
+// BACKGROUND CANVAS — twinkling stars
+// ═══════════════════════════════════════════
+const canvas = document.getElementById('bgCanvas');
+const ctx = canvas.getContext('2d');
+let bgStars = [];
+
+function initBgStars() {
+  bgStars = [];
+  const area = canvas.width * canvas.height;
+  const count = Math.min(Math.floor(area / 2800), 420);
+  for (let i = 0; i < count; i++) {
+    const size = Math.random();
+    bgStars.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: size < 0.7 ? 0.5 : size < 0.92 ? 1 : 1.5,
+      baseAlpha: 0.15 + Math.random() * 0.65,
+      speed: 0.4 + Math.random() * 1.2,
+      phase: Math.random() * Math.PI * 2,
+      color: Math.random() < 0.12 ? `rgba(200,210,255,` : `rgba(255,255,255,`
+    });
+  }
+}
+
+let t = 0;
+function animateBg() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  t += 0.012;
+  for (const s of bgStars) {
+    const a = s.baseAlpha * (0.55 + 0.45 * Math.sin(t * s.speed + s.phase));
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = s.color + a + ')';
+    ctx.fill();
+  }
+  requestAnimationFrame(animateBg);
+}
+
+// ═══════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════
+let memories = [];
+try {
+  memories = JSON.parse(localStorage.getItem('constellation_v2') || '[]');
+} catch(e) { memories = []; }
+
+function save() {
+  try { localStorage.setItem('constellation_v2', JSON.stringify(memories)); }
+  catch(e) { console.warn('No se pudo guardar en localStorage'); }
+}
+
+// ═══════════════════════════════════════════
+// CONSTELLATION RENDERING
+// ═══════════════════════════════════════════
+const svg = document.getElementById('constellationSvg');
+const linesGroup = document.getElementById('linesGroup');
+const starsGroup = document.getElementById('starsGroup');
+let animPulseIds = [];
+
+function generatePosition(existing) {
+  const W = window.innerWidth, H = window.innerHeight;
+  const pTop = 0.2, pBot = 0.86, pLeft = 0.06, pRight = 0.94;
+  const minDist = Math.min(W, H) * 0.15;
+  let best = null, bestDist = -1;
+  for (let attempt = 0; attempt < 300; attempt++) {
+    const px = pLeft + Math.random() * (pRight - pLeft);
+    const py = pTop + Math.random() * (pBot - pTop);
+    const x = px * W, y = py * H;
+    let minD = Infinity;
+    for (const s of existing) {
+      const d = Math.hypot(s.px * W - x, s.py * H - y);
+      if (d < minD) minD = d;
+    }
+    if (minD > minDist) return { px, py };
+    if (minD > bestDist) { bestDist = minD; best = { px, py }; }
+  }
+  return best || { px: 0.2 + Math.random() * 0.6, py: 0.25 + Math.random() * 0.55 };
+}
+
+function buildEdges(sorted) {
+  if (sorted.length < 2) return [];
+  const edges = [];
+  for (let i = 0; i < sorted.length - 1; i++) {
+    edges.push([i, i + 1]);
+  }
+  if (sorted.length >= 4) {
+    const W = window.innerWidth, H = window.innerHeight;
+    for (let i = 0; i < sorted.length; i++) {
+      let nearDist = Infinity, nearIdx = -1;
+      for (let j = 0; j < sorted.length; j++) {
+        if (j === i || j === i-1 || j === i+1) continue;
+        const d = Math.hypot(
+          (sorted[i].px - sorted[j].px) * W,
+          (sorted[i].py - sorted[j].py) * H
+        );
+        if (d < nearDist && d < Math.min(W, H) * 0.32) {
+          nearDist = d; nearIdx = j;
+        }
+      }
+      if (nearIdx !== -1) {
+        const key = [Math.min(i, nearIdx), Math.max(i, nearIdx)].join('-');
+        if (!edges.find(e => e[0] === Math.min(i,nearIdx) && e[1] === Math.max(i,nearIdx)))
+          edges.push([Math.min(i, nearIdx), Math.max(i, nearIdx)]);
+      }
+    }
+  }
+  return edges;
+}
+
+function renderConstellation(newId) {
+  linesGroup.innerHTML = '';
+  starsGroup.innerHTML = '';
+  animPulseIds.forEach(clearInterval);
+  animPulseIds = [];
+
+  const W = window.innerWidth, H = window.innerHeight;
+  const sorted = [...memories].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  document.getElementById('emptyHint').style.opacity = sorted.length === 0 ? '1' : '0';
+
+  const edges = buildEdges(sorted);
+  edges.forEach(([i, j], edgeIdx) => {
+    const a = sorted[i], b = sorted[j];
+    const x1 = a.px * W, y1 = a.py * H;
+    const x2 = b.px * W, y2 = b.py * H;
+    const len = Math.hypot(x2 - x1, y2 - y1);
+
+    const glowLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    glowLine.setAttribute('x1', x1); glowLine.setAttribute('y1', y1);
+    glowLine.setAttribute('x2', x2); glowLine.setAttribute('y2', y2);
+    glowLine.setAttribute('stroke', 'rgba(150,180,255,0.12)');
+    glowLine.setAttribute('stroke-width', '3');
+    glowLine.setAttribute('filter', 'url(#lineGlow)');
+    linesGroup.appendChild(glowLine);
+
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    line.setAttribute('stroke', 'rgba(147,197,253,0.32)');
+    line.setAttribute('stroke-width', '0.7');
+    line.setAttribute('stroke-dasharray', `4 7`);
+    line.setAttribute('stroke-dashoffset', len);
+    line.style.animation = `lineDraw 0.9s ${edgeIdx * 0.1}s ease forwards`;
+    linesGroup.appendChild(line);
+  });
+
+  sorted.forEach((m, idx) => {
+    const x = m.px * W, y = m.py * H;
+    const isNew = m.id === newId;
+
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('cursor', 'pointer');
+    g.setAttribute('data-id', m.id);
+
+    // CONFIGURACIÓN DINÁMICA DE ESTRELLAS
+    let starColor = '#f5e6c8'; 
+    let glowColor = 'rgba(200,160,255,0.35)'; 
+    let baseRadius = 4.5;
+    let pulseScale = 9;
+
+    if (m.starType === 'special') {
+      starColor = '#93c5fd'; // Azul brillante
+      glowColor = 'rgba(147,197,253,0.5)';
+      baseRadius = 6;
+      pulseScale = 12;
+    } else if (m.starType === 'epic') {
+      starColor = '#fca5a5'; // Rosa/Roja
+      glowColor = 'rgba(252,165,165,0.6)';
+      baseRadius = 8;
+      pulseScale = 16;
+    }
+
+    const halo = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    halo.setAttribute('cx', x); halo.setAttribute('cy', y); halo.setAttribute('r', (baseRadius * 4).toString());
+    halo.setAttribute('fill', 'rgba(140,100,255,0.04)');
+    g.appendChild(halo);
+
+    const pulseRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    pulseRing.setAttribute('cx', x); pulseRing.setAttribute('cy', y); pulseRing.setAttribute('r', pulseScale.toString());
+    pulseRing.setAttribute('fill', 'none');
+    pulseRing.setAttribute('stroke', glowColor.replace(/[\d.]+\)$/g, '0.18)'));
+    pulseRing.setAttribute('stroke-width', '1');
+    g.appendChild(pulseRing);
+    
+    let pulseTick = Math.random() * Math.PI * 2;
+    const pulseId = setInterval(() => {
+      pulseTick += 0.04;
+      const scale = 1 + 0.3 * Math.sin(pulseTick);
+      const alpha = 0.12 + 0.1 * Math.sin(pulseTick);
+      pulseRing.setAttribute('r', String(pulseScale * scale));
+      pulseRing.setAttribute('stroke', glowColor.replace(/[\d.]+\)$/g, `${alpha})`));
+    }, 50);
+    animPulseIds.push(pulseId);
+
+    const glowC = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    glowC.setAttribute('cx', x); glowC.setAttribute('cy', y); glowC.setAttribute('r', (baseRadius * 1.5).toString());
+    glowC.setAttribute('fill', glowColor);
+    glowC.setAttribute('filter', 'url(#glowMid)');
+    g.appendChild(glowC);
+
+    const star = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    star.setAttribute('cx', x); star.setAttribute('cy', y); star.setAttribute('r', baseRadius.toString());
+    star.setAttribute('fill', starColor);
+    star.setAttribute('filter', 'url(#glow)');
+    g.appendChild(star);
+
+    const core = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    core.setAttribute('cx', x); core.setAttribute('cy', y); core.setAttribute('r', (baseRadius * 0.4).toString());
+    core.setAttribute('fill', 'white');
+    g.appendChild(core);
+
+    function makeCross(sz, alpha) {
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      const s = sz, t = sz * 0.22;
+      path.setAttribute('d', `M${x},${y-s} C${x+t},${y-t} ${x+t},${y-t} ${x+s},${y} C${x+t},${y+t} ${x+t},${y+t} ${x},${y+s} C${x-t},${y+t} ${x-t},${y+t} ${x-s},${y} C${x-t},${y-t} ${x-t},${y-t} ${x},${y-s} Z`);
+      path.setAttribute('fill', `rgba(245,230,200,${alpha})`);
+      return path;
+    }
+    g.appendChild(makeCross(baseRadius * 2, 0.28));
+    g.appendChild(makeCross(baseRadius * 3, 0.10));
+
+    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    label.setAttribute('x', x);
+    label.setAttribute('y', y + baseRadius + 20);
+    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('fill', 'rgba(200,178,255,0.72)');
+    label.setAttribute('font-size', '9.5');
+    label.setAttribute('font-family', 'Nunito, sans-serif');
+    label.setAttribute('letter-spacing', '0.8');
+    const shortTitle = m.title.length > 16 ? m.title.slice(0, 15) + '…' : m.title;
+    label.textContent = shortTitle;
+    g.appendChild(label);
+
+    g.addEventListener('mouseenter', () => {
+      star.setAttribute('r', (baseRadius * 1.4).toString());
+      star.setAttribute('fill', '#ffe8a0');
+      glowC.setAttribute('r', (baseRadius * 2).toString());
+      glowC.setAttribute('fill', 'rgba(220,180,255,0.5)');
+      label.setAttribute('fill', 'rgba(230,210,255,0.95)');
+      label.setAttribute('font-size', '10.5');
+    });
+    g.addEventListener('mouseleave', () => {
+      star.setAttribute('r', baseRadius.toString());
+      star.setAttribute('fill', starColor);
+      glowC.setAttribute('r', (baseRadius * 1.5).toString());
+      glowC.setAttribute('fill', glowColor);
+      label.setAttribute('fill', 'rgba(200,178,255,0.72)');
+      label.setAttribute('font-size', '9.5');
+    });
+
+    g.addEventListener('touchstart', () => { star.setAttribute('fill', '#ffe8a0'); }, { passive: true });
+    g.addEventListener('touchend', () => { star.setAttribute('fill', starColor); }, { passive: true });
+
+    // REPRODUCIR SONIDO AL TOCAR ESTRELLA
+    g.addEventListener('click', () => {
+      playSound('click');
+      openMemory(m);
+    });
+
+    if (isNew) {
+      g.style.transformOrigin = `${x}px ${y}px`;
+      g.style.animation = 'starBorn 0.7s cubic-bezier(0.34,1.56,0.64,1) forwards';
+    }
+
+    starsGroup.appendChild(g);
+  });
+
+  const badge = document.getElementById('countBadge');
+  if (memories.length === 0) badge.textContent = '';
+  else badge.textContent = `${memories.length} ${memories.length === 1 ? 'recuerdo' : 'recuerdos'}`;
+}
+
+// ═══════════════════════════════════════════
+// MEMORY VIEWER & LOGIC
+// ═══════════════════════════════════════════
+const MONTHS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+let memoryActivaId = null; 
+let editandoId = null; 
+
+function formatDate(str) {
+  if (!str) return '';
+  const [y, m, d] = str.split('-');
+  return `${parseInt(d)} de ${MONTHS[parseInt(m) - 1]} de ${y}`;
+}
+
+function openMemory(m) {
+  memoryActivaId = m.id;
+  document.getElementById('memDate').textContent = formatDate(m.date);
+  document.getElementById('memTitle').textContent = m.title;
+  document.getElementById('memDesc').textContent = m.description || '';
+
+  const wrap = document.getElementById('memoryPhotoWrap');
+  if (m.photo) {
+    wrap.innerHTML = `<img class="memory-photo" src="${m.photo}" alt="${m.title}"><div class="memory-photo-overlay"></div>`;
+  } else {
+    wrap.innerHTML = `<div class="memory-no-photo"><span>✦</span></div>`;
+  }
+  document.getElementById('memoryOverlay').classList.add('open');
+}
+
+function closeMemory() {
+  document.getElementById('memoryOverlay').classList.remove('open');
+}
+
+document.getElementById('memoryClose').addEventListener('click', closeMemory);
+document.getElementById('memoryOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('memoryOverlay')) closeMemory();
+});
+
+// ── Lógica de Formulario (Crear y Editar) ──
+let pendingPhoto = null;
+
+function openForm(memoryToEdit = null) {
+  initAudio(); // Iniciar contexto de audio en la primera interacción
+  if (memoryToEdit) {
+    editandoId = memoryToEdit.id;
+    document.getElementById('formHeaderTitle').innerText = "✦ &nbsp;Editar recuerdo";
+    document.getElementById('fTitle').value = memoryToEdit.title;
+    document.getElementById('fDate').value = memoryToEdit.date;
+    document.getElementById('fType').value = memoryToEdit.starType || 'normal';
+    document.getElementById('fDesc').value = memoryToEdit.description;
+    document.getElementById('formSave').innerText = "Guardar cambios ✦";
+    
+    if (memoryToEdit.photo) {
+      pendingPhoto = memoryToEdit.photo;
+      const preview = document.getElementById('uploadPreview');
+      preview.src = memoryToEdit.photo;
+      preview.style.display = 'block';
+      document.getElementById('uploadPlaceholder').style.display = 'none';
+    } else {
+      resetUploadArea();
+    }
+  } else {
+    editandoId = null;
+    document.getElementById('formHeaderTitle').innerText = "✦ &nbsp;Nuevo recuerdo";
+    document.getElementById('fTitle').value = '';
+    document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('fType').value = 'normal';
+    document.getElementById('fDesc').value = '';
+    document.getElementById('formSave').innerText = "Agregar estrella ✦";
+    resetUploadArea();
+  }
+  
+  document.getElementById('formOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('fTitle').focus(), 350);
+}
+
+function resetUploadArea() {
+  document.getElementById('fPhoto').value = '';
+  document.getElementById('uploadPreview').style.display = 'none';
+  document.getElementById('uploadPlaceholder').style.display = 'block';
+  pendingPhoto = null;
+}
+
+function closeForm() {
+  document.getElementById('formOverlay').classList.remove('open');
+  editandoId = null;
+}
+
+document.getElementById('addBtn').addEventListener('click', () => openForm());
+document.getElementById('formCancel').addEventListener('click', closeForm);
+document.getElementById('formX').addEventListener('click', closeForm);
+document.getElementById('formOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('formOverlay')) closeForm();
+});
+
+document.getElementById('memoryEdit').addEventListener('click', () => {
+  const m = memories.find(mem => mem.id === memoryActivaId);
+  if (m) {
+    closeMemory();
+    openForm(m);
+  }
+});
+
+function resizeImage(file, callback) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX_W = 900, MAX_H = 700;
+      let w = img.width, h = img.height;
+      if (w > MAX_W) { h = Math.round(h * MAX_W / w); w = MAX_W; }
+      if (h > MAX_H) { w = Math.round(w * MAX_H / h); h = MAX_H; }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      callback(c.toDataURL('image/jpeg', 0.72));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+document.getElementById('fPhoto').addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+  resizeImage(file, data64 => {
+    pendingPhoto = data64;
+    const preview = document.getElementById('uploadPreview');
+    preview.src = data64;
+    preview.style.display = 'block';
+    document.getElementById('uploadPlaceholder').style.display = 'none';
+  });
+});
+
+document.getElementById('formSave').addEventListener('click', () => {
+  const title = document.getElementById('fTitle').value.trim();
+  const date  = document.getElementById('fDate').value;
+  const desc  = document.getElementById('fDesc').value.trim();
+  const starType = document.getElementById('fType').value;
+  
+  if (!title || !date) return;
+
+  if (editandoId) {
+    const idx = memories.findIndex(m => m.id === editandoId);
+    if (idx !== -1) {
+      memories[idx].title = title;
+      memories[idx].date = date;
+      memories[idx].description = desc;
+      memories[idx].photo = pendingPhoto;
+      memories[idx].starType = starType;
+    }
+    editandoId = null;
+    save();
+    closeForm();
+    renderConstellation(); 
+  } else {
+    const pos = generatePosition(memories);
+    const newMem = {
+      id: Date.now(),
+      title, date, description: desc,
+      photo: pendingPhoto || null,
+      px: pos.px, py: pos.py,
+      starType: starType
+    };
+    memories.push(newMem);
+    save();
+    closeForm();
+    playSound('create'); // REPRODUCIR SONIDO AL CREAR
+    renderConstellation(newMem.id);
+  }
+});
+
+// ── Lógica de Eliminar y Backup ──
+document.getElementById('memoryDelete').addEventListener('click', () => {
+  if (confirm("¿Seguro que querés borrar esta estrella de la constelación?")) {
+    playSound('delete'); // REPRODUCIR SONIDO AL BORRAR
+    memories = memories.filter(m => m.id !== memoryActivaId);
+    save();
+    closeMemory();
+    renderConstellation();
+  }
+});
+
+document.getElementById('btnExport').addEventListener('click', () => {
+  if (memories.length === 0) return alert("El universo está vacío. ¡Agregá recuerdos primero!");
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(memories));
+  const a = document.createElement('a');
+  a.setAttribute("href", dataStr);
+  a.setAttribute("download", "nuestro_universo.json");
+  a.click();
+});
+
+document.getElementById('btnImport').addEventListener('click', () => document.getElementById('fileImport').click());
+
+document.getElementById('fileImport').addEventListener('change', function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (Array.isArray(imported)) {
+        memories = imported;
+        save();
+        renderConstellation();
+        alert("¡Universo restaurado!");
+      }
+    } catch (err) { alert("Error al cargar el archivo."); }
+  };
+  reader.readAsText(file);
+  this.value = ''; 
+});
+
+// ═══════════════════════════════════════════
+// NUEVO: NAVEGACIÓN ESPACIAL (PAN & ZOOM)
+// ═══════════════════════════════════════════
+const universeMap = document.getElementById('universeMap');
+let mapX = 0, mapY = 0, mapZoom = 1;
+let isDraggingMap = false;
+let startMapX, startMapY;
+let initialPinchDist = null;
+let initialZoomStart = 1;
+
+function updateMapTransform() {
+  universeMap.setAttribute('transform', `translate(${mapX}, ${mapY}) scale(${mapZoom})`);
+}
+
+svg.addEventListener('mousedown', (e) => {
+  if (e.target.closest('g[data-id]')) return; 
+  isDraggingMap = true;
+  startMapX = e.clientX - mapX;
+  startMapY = e.clientY - mapY;
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (!isDraggingMap) return;
+  mapX = e.clientX - startMapX;
+  mapY = e.clientY - startMapY;
+  updateMapTransform();
+});
+
+window.addEventListener('mouseup', () => { isDraggingMap = false; });
+window.addEventListener('mouseleave', () => { isDraggingMap = false; });
+
+svg.addEventListener('wheel', (e) => {
+  if (document.getElementById('formOverlay').classList.contains('open') || 
+      document.getElementById('memoryOverlay').classList.contains('open')) return;
+      
+  e.preventDefault();
+  const zoomSpeed = -0.002;
+  mapZoom += e.deltaY * zoomSpeed;
+  mapZoom = Math.max(0.3, Math.min(mapZoom, 4)); 
+  updateMapTransform();
+}, { passive: false });
+
+svg.addEventListener('touchstart', (e) => {
+  if (e.target.closest('g[data-id]')) return;
+  
+  if (e.touches.length === 1) { 
+    isDraggingMap = true;
+    startMapX = e.touches[0].clientX - mapX;
+    startMapY = e.touches[0].clientY - mapY;
+  } else if (e.touches.length === 2) { 
+    isDraggingMap = false;
+    initialPinchDist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    initialZoomStart = mapZoom;
+  }
+}, { passive: false });
+
+window.addEventListener('touchmove', (e) => {
+  if (isDraggingMap && e.touches.length === 1) {
+    mapX = e.touches[0].clientX - startMapX;
+    mapY = e.touches[0].clientY - startMapY;
+    updateMapTransform();
+  } else if (e.touches.length === 2 && initialPinchDist) {
+    e.preventDefault(); 
+    const currentDist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    mapZoom = initialZoomStart * (currentDist / initialPinchDist);
+    mapZoom = Math.max(0.3, Math.min(mapZoom, 4));
+    updateMapTransform();
+  }
+}, { passive: false });
+
+window.addEventListener('touchend', () => {
+  isDraggingMap = false;
+  initialPinchDist = null;
+});
+
+svg.addEventListener('dblclick', () => {
+  mapX = 0; mapY = 0; mapZoom = 1; 
+  updateMapTransform();
+});
+
+// ═══════════════════════════════════════════
+// RESIZE HANDLER & INIT
+// ═══════════════════════════════════════════
+function onResize() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  initBgStars();
+  renderConstellation();
+}
+window.addEventListener('resize', onResize);
+onResize();
+animateBg();
+</script>
+</body>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(registration => {
+          console.log('ServiceWorker registrado con éxito:', registration.scope);
+        })
+        .catch(error => {
+          console.log('Error al registrar el ServiceWorker:', error);
+        });
+    });
+  }
+</script>
+</html>
