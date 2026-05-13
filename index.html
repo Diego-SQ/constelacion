@@ -613,6 +613,9 @@ input[type=date].form-input { color-scheme: dark; }
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  
 <script>
 // ═══════════════════════════════════════════
 // MOTOR DE AUDIO Y VIBRACIÓN (SINTETIZADOR)
@@ -717,17 +720,32 @@ function animateBg() {
 }
 
 // ═══════════════════════════════════════════
-// DATA
+// DATA Y FIREBASE (TIEMPO REAL)
 // ═══════════════════════════════════════════
-let memories = [];
-try {
-  memories = JSON.parse(localStorage.getItem('constellation_v2') || '[]');
-} catch(e) { memories = []; }
+const firebaseConfig = {
+  apiKey: "AIzaSyAqZDYNm9svwvVpaS7JD4AJwtQOthtoKKE",
+  authDomain: "nuestraconstelacion-e102b.firebaseapp.com",
+  projectId: "nuestraconstelacion-e102b",
+  storageBucket: "nuestraconstelacion-e102b.firebasestorage.app",
+  messagingSenderId: "76563907932",
+  appId: "1:76563907932:web:bd7f132f339b7b89706d99"
+};
 
-function save() {
-  try { localStorage.setItem('constellation_v2', JSON.stringify(memories)); }
-  catch(e) { console.warn('No se pudo guardar en localStorage'); }
-}
+// Iniciamos Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let memories = [];
+
+// Esto escucha a la base de datos permanentemente
+db.collection("memories").onSnapshot((snapshot) => {
+  memories = [];
+  snapshot.forEach((doc) => {
+    memories.push(doc.data());
+  });
+  // Cada vez que hay un cambio en la nube, redibujamos el universo.
+  renderConstellation();
+});
 
 // ═══════════════════════════════════════════
 // CONSTELLATION RENDERING
@@ -1092,43 +1110,46 @@ document.getElementById('formSave').addEventListener('click', () => {
   if (!title || !date) return;
 
   if (editandoId) {
-    const idx = memories.findIndex(m => m.id === editandoId);
-    if (idx !== -1) {
-      memories[idx].title = title;
-      memories[idx].date = date;
-      memories[idx].description = desc;
-      memories[idx].photo = pendingPhoto;
-      memories[idx].starType = starType;
-    }
-    editandoId = null;
-    save();
-    closeForm();
-    renderConstellation(); 
+    // ACTUALIZAR EN LA NUBE
+    db.collection("memories").doc(editandoId.toString()).update({
+      title: title,
+      date: date,
+      description: desc,
+      photo: pendingPhoto,
+      starType: starType
+    }).then(() => {
+      editandoId = null;
+      closeForm();
+    });
   } else {
+    // CREAR NUEVO EN LA NUBE
     const pos = generatePosition(memories);
+    const newId = Date.now();
     const newMem = {
-      id: Date.now(),
+      id: newId,
       title, date, description: desc,
       photo: pendingPhoto || null,
       px: pos.px, py: pos.py,
       starType: starType
     };
-    memories.push(newMem);
-    save();
-    closeForm();
-    playSound('create'); // REPRODUCIR SONIDO AL CREAR
-    renderConstellation(newMem.id);
+    
+    // Guardamos el documento usando su ID como nombre
+    db.collection("memories").doc(newId.toString()).set(newMem).then(() => {
+      closeForm();
+      playSound('create');
+    });
   }
 });
-
 // ── Lógica de Eliminar y Backup ──
+
 document.getElementById('memoryDelete').addEventListener('click', () => {
   if (confirm("¿Seguro que querés borrar esta estrella de la constelación?")) {
-    playSound('delete'); // REPRODUCIR SONIDO AL BORRAR
-    memories = memories.filter(m => m.id !== memoryActivaId);
-    save();
-    closeMemory();
-    renderConstellation();
+    playSound('delete');
+    
+    // BORRAR DE LA NUBE
+    db.collection("memories").doc(memoryActivaId.toString()).delete().then(() => {
+      closeMemory();
+    });
   }
 });
 
