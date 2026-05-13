@@ -160,6 +160,7 @@ body {
   z-index: 5;
   pointer-events: none;
   transition: opacity 0.5s;
+  opacity: 0;
 }
 .hint p {
   font-family: 'Cormorant Garamond', serif;
@@ -712,6 +713,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 let memories = [];
+let datosCargados = false; // NUEVA VARIABLE
 
 // Esto escucha a la base de datos permanentemente
 db.collection("memories").onSnapshot((snapshot) => {
@@ -719,6 +721,9 @@ db.collection("memories").onSnapshot((snapshot) => {
   snapshot.forEach((doc) => {
     memories.push(doc.data());
   });
+  
+  datosCargados = true; // LE AVISAMOS QUE FIREBASE YA RESPONDIÓ
+  
   // Cada vez que hay un cambio en la nube, redibujamos el universo.
   renderConstellation();
 });
@@ -790,7 +795,12 @@ function renderConstellation(newId) {
   const W = window.innerWidth, H = window.innerHeight;
   const sorted = [...memories].sort((a, b) => new Date(a.date) - new Date(b.date));
 
-  document.getElementById('emptyHint').style.opacity = sorted.length === 0 ? '1' : '0';
+  //document.getElementById('emptyHint').style.opacity = sorted.length === 0 ? '1' : '0';
+  if (datosCargados && sorted.length === 0) {
+    document.getElementById('emptyHint').style.opacity = '1';
+  } else {
+    document.getElementById('emptyHint').style.opacity = '0';
+  }
 
   const edges = buildEdges(sorted);
   edges.forEach(([i, j], edgeIdx) => {
