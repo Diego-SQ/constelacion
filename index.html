@@ -1037,12 +1037,28 @@ function openForm(memoryToEdit = null) {
     document.getElementById('fDesc').value = memoryToEdit.description;
     document.getElementById('formSave').innerText = "Guardar cambios ✦";
     
-    if (memoryToEdit.photo) {
-      pendingPhoto = memoryToEdit.photo;
+    // CARGAR FOTOS VIEJAS AL FORMULARIO (Soporta Array nuevo y Base64 viejo)
+    const fotosViejas = memoryToEdit.photos ? memoryToEdit.photos : (memoryToEdit.photo ? [memoryToEdit.photo] : []);
+    
+    if (fotosViejas.length > 0) {
+      pendingPhotos = [...fotosViejas];
       const preview = document.getElementById('uploadPreview');
-      preview.src = memoryToEdit.photo;
+      preview.src = pendingPhotos[0];
       preview.style.display = 'block';
       document.getElementById('uploadPlaceholder').style.display = 'none';
+      
+      // Mostrar cartelito si hay más de una foto
+      if(pendingPhotos.length > 1) {
+        let badge = document.getElementById('photoCountBadge');
+        if(!badge) {
+            badge = document.createElement('div');
+            badge.id = 'photoCountBadge';
+            badge.style.cssText = 'position:absolute; bottom:10px; right:10px; background:rgba(167,139,250,0.9); color:white; padding:4px 8px; border-radius:10px; font-size:12px; font-weight:bold; z-index:10;';
+            document.getElementById('uploadArea').appendChild(badge);
+        }
+        badge.innerText = `+${pendingPhotos.length - 1} fotos`;
+        badge.style.display = 'block';
+      }
     } else {
       resetUploadArea();
     }
@@ -1212,14 +1228,32 @@ document.getElementById('formSave').addEventListener('click', async () => {
 });
 
 // ── Lógica de Eliminar en la Nube ──
-document.getElementById('memoryDelete').addEventListener('click', () => {
+document.getElementById('memoryDelete').addEventListener('click', async () => {
   if (confirm("¿Seguro que querés borrar esta estrella de la constelación?")) {
     playSound('delete');
     
-    // BORRAR DE LA NUBE
-    db.collection("memories").doc(memoryActivaId.toString()).delete().then(() => {
+    try {
+      // 1. Borrar archivos físicos de Storage (si los hay)
+      if (activeMemoryPhotos && activeMemoryPhotos.length > 0) {
+        for (let url of activeMemoryPhotos) {
+          // Chequeamos que sea un link de Storage (para no romper con los Base64 viejos)
+          if (url.includes('firebasestorage.googleapis.com')) {
+            try {
+              await firebase.storage().refFromURL(url).delete();
+            } catch (err) {
+              console.warn("No se pudo borrar la foto física:", err);
+            }
+          }
+        }
+      }
+
+      // 2. Borrar documento de la Base de Datos
+      await db.collection("memories").doc(memoryActivaId.toString()).delete();
       closeMemory();
-    });
+      
+    } catch (error) {
+      console.error("Error eliminando la estrella:", error);
+    }
   }
 });
   
@@ -1322,7 +1356,6 @@ window.addEventListener('resize', onResize);
 onResize();
 animateBg();
 </script>
-</body>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -1336,4 +1369,5 @@ animateBg();
     });
   }
 </script>
+</body>
 </html>
