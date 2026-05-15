@@ -704,6 +704,7 @@ const firebaseConfig = {
 // Iniciamos Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const storage = firebase.storage(); // NUESTRO NUEVO DISCO DURO
 
 let memories = [];
 let datosCargados = false; // NUEVA VARIABLE
@@ -960,18 +961,55 @@ function formatDate(str) {
   return `${parseInt(d)} de ${MONTHS[parseInt(m) - 1]} de ${y}`;
 }
 
+// Reemplazar funciones openMemory y closeMemory por estas:
+let currentPhotoIndex = 0;
+let activeMemoryPhotos = [];
+
+function renderActivePhoto() {
+  const wrap = document.getElementById('memoryPhotoWrap');
+  if (activeMemoryPhotos.length === 0) {
+    wrap.innerHTML = `<div class="memory-no-photo"><span>✦</span></div>`;
+    return;
+  }
+
+  // Dibujar la foto actual
+  let html = `<img class="memory-photo" src="${activeMemoryPhotos[currentPhotoIndex]}" alt="Recuerdo">`;
+
+  // Si hay más de una foto, agregamos las flechas
+  if (activeMemoryPhotos.length > 1) {
+    html += `
+      <button onclick="prevPhoto(event)" style="position:absolute; left:8px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.85); color:#333; border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; z-index:5; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.3);">❮</button>
+      <button onclick="nextPhoto(event)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.85); color:#333; border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; z-index:5; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.3);">❯</button>
+      <div style="position:absolute; bottom:12px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.6); color:white; padding:3px 10px; border-radius:12px; font-size:11px; z-index:5; letter-spacing:1px;">${currentPhotoIndex + 1} / ${activeMemoryPhotos.length}</div>
+    `;
+  }
+  wrap.innerHTML = html;
+}
+
+window.prevPhoto = function(e) {
+  e.stopPropagation();
+  currentPhotoIndex = (currentPhotoIndex - 1 + activeMemoryPhotos.length) % activeMemoryPhotos.length;
+  renderActivePhoto();
+  playSound('click'); // Sonido al pasar de foto
+}
+window.nextPhoto = function(e) {
+  e.stopPropagation();
+  currentPhotoIndex = (currentPhotoIndex + 1) % activeMemoryPhotos.length;
+  renderActivePhoto();
+  playSound('click');
+}
+
 function openMemory(m) {
   memoryActivaId = m.id;
   document.getElementById('memDate').textContent = formatDate(m.date);
   document.getElementById('memTitle').textContent = m.title;
   document.getElementById('memDesc').textContent = m.description || '';
 
-  const wrap = document.getElementById('memoryPhotoWrap');
-  if (m.photo) {
-    wrap.innerHTML = `<img class="memory-photo" src="${m.photo}" alt="${m.title}"><div class="memory-photo-overlay"></div>`;
-  } else {
-    wrap.innerHTML = `<div class="memory-no-photo"><span>✦</span></div>`;
-  }
+  // Compatibilidad: lee el array nuevo o la foto única vieja
+  activeMemoryPhotos = m.photos ? m.photos : (m.photo ? [m.photo] : []);
+  currentPhotoIndex = 0;
+
+  renderActivePhoto();
   document.getElementById('memoryOverlay').classList.add('open');
 }
 
@@ -985,7 +1023,7 @@ document.getElementById('memoryOverlay').addEventListener('click', e => {
 });
 
 // ── Lógica de Formulario (Crear y Editar) ──
-let pendingPhoto = null;
+let pendingPhotos = [];
 
 function openForm(memoryToEdit = null) {
   initAudio(); // Iniciar contexto de audio en la primera interacción
@@ -1026,7 +1064,11 @@ function resetUploadArea() {
   document.getElementById('fPhoto').value = '';
   document.getElementById('uploadPreview').style.display = 'none';
   document.getElementById('uploadPlaceholder').style.display = 'block';
-  pendingPhoto = null;
+  
+  let badge = document.getElementById('photoCountBadge');
+  if(badge) badge.style.display = 'none';
+  
+  pendingPhotos = [];
 }
 
 function closeForm() {
@@ -1068,16 +1110,104 @@ function resizeImage(file, callback) {
   reader.readAsDataURL(file);
 }
 
-document.getElementById('fPhoto').addEventListener('change', function() {
-  const file = this.files[0];
-  if (!file) return;
-  resizeImage(file, data64 => {
-    pendingPhoto = data64;
-    const preview = document.getElementById('uploadPreview');
-    preview.src = data64;
-    preview.style.display = 'block';
-    document.getElementById('uploadPlaceholder').style.display = 'none';
-  });
+// Al seleccionar fotos...
+document.getElementById('fPhoto').addEventListener('change', async function() {
+  const files = Array.from(this.files);
+  if (files.length === 0) return;
+
+  pendingPhotos = [];
+  const placeholder = document.getElementById('uploadPlaceholder');
+  const preview = document.getElementById('uploadPreview');
+
+  placeholder.innerHTML = `<span class="upload-icon">⏳</span><p class="upload-hint">Procesando ${files.length} foto(s)...</p>`;
+
+  // Procesamos y achicamos todas las fotos seleccionadas
+  for (let file of files) {
+    await new Promise(resolve => {
+      resizeImage(file, data64 => {
+        pendingPhotos.push(data64);
+        resolve();
+      });
+    });
+  }
+
+  // Mostramos la primera como portada
+  preview.src = pendingPhotos[0];
+  preview.style.display = 'block';
+  placeholder.style.display = 'none';
+
+  // Si hay más de una, ponemos un cartelito de aviso
+  if(pendingPhotos.length > 1) {
+      let badge = document.getElementById('photoCountBadge');
+      if(!badge) {
+          badge = document.createElement('div');
+          badge.id = 'photoCountBadge';
+          badge.style.cssText = 'position:absolute; bottom:10px; right:10px; background:rgba(167,139,250,0.9); color:white; padding:4px 8px; border-radius:10px; font-size:12px; font-weight:bold; z-index:10;';
+          document.getElementById('uploadArea').appendChild(badge);
+      }
+      badge.innerText = `+${pendingPhotos.length - 1} fotos`;
+      badge.style.display = 'block';
+  }
+});
+
+// Al tocar GUARDAR ESTRELLA... (MAGIA ASÍNCRONA)
+document.getElementById('formSave').addEventListener('click', async () => {
+  const title = document.getElementById('fTitle').value.trim();
+  const date  = document.getElementById('fDate').value;
+  const desc  = document.getElementById('fDesc').value.trim();
+  const starType = document.getElementById('fType').value;
+  
+  if (!title || !date) return;
+
+  // Cambiamos el texto del botón mientras sube a la nube
+  const saveBtn = document.getElementById('formSave');
+  saveBtn.innerText = "Subiendo fotos... ⏳";
+  saveBtn.disabled = true;
+
+  try {
+    const idAUsar = editandoId ? editandoId : Date.now();
+    let uploadedUrls = [];
+
+    // SI HAY FOTOS PENDIENTES, LAS SUBIMOS A FIREBASE STORAGE
+    if (pendingPhotos.length > 0) {
+      for (let i = 0; i < pendingPhotos.length; i++) {
+        // Creamos una ruta única en tu disco duro para cada foto
+        const fileRef = storage.ref(`memories/${idAUsar}/foto_${i}_${Date.now()}.jpg`);
+        await fileRef.putString(pendingPhotos[i], 'data_url'); // Sube el archivo
+        const url = await fileRef.getDownloadURL(); // Obtenemos el link de internet
+        uploadedUrls.push(url);
+      }
+    }
+
+    if (editandoId) {
+      // ACTUALIZAR ESTRELLA VIEJA
+      let updateData = { title, date, description: desc, starType };
+      if (uploadedUrls.length > 0) updateData.photos = uploadedUrls; // Solo cambia las fotos si subiste nuevas
+      
+      await db.collection("memories").doc(editandoId.toString()).update(updateData);
+    } else {
+      // CREAR ESTRELLA NUEVA
+      const pos = generatePosition(memories);
+      const newMem = {
+        id: idAUsar,
+        title, date, description: desc,
+        photos: uploadedUrls, // GUARDAMOS LA LISTA DE LINKS
+        px: pos.px, py: pos.py,
+        starType: starType
+      };
+      await db.collection("memories").doc(idAUsar.toString()).set(newMem);
+      playSound('create');
+    }
+    
+    closeForm();
+  } catch (error) {
+    alert("Error al subir a la nube. Revisá tu conexión.");
+    console.error(error);
+  } finally {
+    // Devolvemos el botón a la normalidad
+    saveBtn.innerText = "Agregar estrella ✦";
+    saveBtn.disabled = false;
+  }
 });
 
 document.getElementById('formSave').addEventListener('click', () => {
