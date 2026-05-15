@@ -676,9 +676,21 @@ function initBgStars() {
   }
 }
 
-  let t = 0;
+let t = 0;
+let isAppVisible = true;
+
+// Detecta cuando el usuario sale de la pestaña o minimiza la app
+document.addEventListener('visibilitychange', () => {
+  isAppVisible = (document.visibilityState === 'visible');
+});
+
 function animateBg() {
-  // 1. Dibuja el fondo de estrellitas en el Canvas
+  // Si la app está en segundo plano, no gastamos CPU
+  if (!isAppVisible) {
+    requestAnimationFrame(animateBg);
+    return;
+  }
+
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   t += 0.012;
   for (const s of bgStars) {
@@ -689,7 +701,6 @@ function animateBg() {
     ctx.fill();
   }
 
-  // 2. Anima los aros de la constelación (Sincronizado)
   for (let i = 0; i < constellationRings.length; i++) {
     let ring = constellationRings[i];
     ring.tick += 0.04;
@@ -699,9 +710,9 @@ function animateBg() {
     ring.element.setAttribute('stroke', ring.glowColor.replace(/[\d.]+\)$/g, `${alpha})`));
   }
 
-  // Llama al siguiente fotograma a 60 FPS
   requestAnimationFrame(animateBg);
 }
+  
 // ═══════════════════════════════════════════
 // DATA Y FIREBASE (TIEMPO REAL)
 // ═══════════════════════════════════════════
@@ -766,32 +777,36 @@ function generatePosition(existing) {
 function buildEdges(sorted) {
   if (sorted.length < 2) return [];
   const edges = [];
-  for (let i = 0; i < sorted.length - 1; i++) {
-    edges.push([i, i + 1]);
+  const edgeSet = new Set(); // Búsqueda instantánea O(1)
+
+  function addEdge(i, j) {
+    const u = Math.min(i, j), v = Math.max(i, j);
+    const key = `${u}-${v}`;
+    if (!edgeSet.has(key)) {
+      edgeSet.add(key);
+      edges.push([u, v]);
+    }
   }
+
+  for (let i = 0; i < sorted.length - 1; i++) addEdge(i, i + 1);
+
   if (sorted.length >= 4) {
     const W = window.innerWidth, H = window.innerHeight;
     for (let i = 0; i < sorted.length; i++) {
       let nearDist = Infinity, nearIdx = -1;
       for (let j = 0; j < sorted.length; j++) {
-        if (j === i || j === i-1 || j === i+1) continue;
-        const d = Math.hypot(
-          (sorted[i].px - sorted[j].px) * W,
-          (sorted[i].py - sorted[j].py) * H
-        );
+        if (j === i || j === i - 1 || j === i + 1) continue;
+        const d = Math.hypot((sorted[i].px - sorted[j].px) * W, (sorted[i].py - sorted[j].py) * H);
         if (d < nearDist && d < Math.min(W, H) * 0.32) {
           nearDist = d; nearIdx = j;
         }
       }
-      if (nearIdx !== -1) {
-        const key = [Math.min(i, nearIdx), Math.max(i, nearIdx)].join('-');
-        if (!edges.find(e => e[0] === Math.min(i,nearIdx) && e[1] === Math.max(i,nearIdx)))
-          edges.push([Math.min(i, nearIdx), Math.max(i, nearIdx)]);
-      }
+      if (nearIdx !== -1) addEdge(i, nearIdx);
     }
   }
   return edges;
 }
+
 
 function renderConstellation(newId) {
   linesGroup.innerHTML = '';
@@ -1136,26 +1151,35 @@ function resizeImage(file, callback) {
   reader.readAsDataURL(file);
 }
 
-// Al seleccionar fotos...
+ // Al seleccionar fotos... (PROCESAMIENTO EN PARALELO)
 document.getElementById('fPhoto').addEventListener('change', async function() {
   const files = Array.from(this.files);
   if (files.length === 0) return;
 
-  pendingPhotos = [];
   const placeholder = document.getElementById('uploadPlaceholder');
   const preview = document.getElementById('uploadPreview');
+  placeholder.innerHTML = `<span class="upload-icon">⏳</span><p class="upload-hint">Procesando fotos...</p>`;
 
-  placeholder.innerHTML = `<span class="upload-icon">⏳</span><p class="upload-hint">Procesando ${files.length} foto(s)...</p>`;
+  // Magia de Ingeniería: Procesamos todas las fotos AL MISMO TIEMPO
+  pendingPhotos = await Promise.all(files.map(file => {
+    return new Promise(resolve => resizeImage(file, resolve));
+  }));
 
-  // Procesamos y achicamos todas las fotos seleccionadas
-  for (let file of files) {
-    await new Promise(resolve => {
-      resizeImage(file, data64 => {
-        pendingPhotos.push(data64);
-        resolve();
-      });
-    });
+  // Mostramos la primera como portada
+  preview.src = pendingPhotos[0];
+  preview.style.display = 'block';
+  placeholder.style.display = 'none';
+
+  if(pendingPhotos.length > 1) {
+    let badge = document.getElementById('photoCountBadge') || document.createElement('div');
+    badge.id = 'photoCountBadge';
+    badge.style.cssText = 'position:absolute; bottom:10px; right:10px; background:rgba(167,139,250,0.9); color:white; padding:4px 8px; border-radius:10px; font-size:12px; font-weight:bold; z-index:10;';
+    document.getElementById('uploadArea').appendChild(badge);
+    badge.innerText = `+${pendingPhotos.length - 1} fotos`;
+    badge.style.display = 'block';
   }
+});
+  
 
   // Mostramos la primera como portada
   preview.src = pendingPhotos[0];
