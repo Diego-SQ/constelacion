@@ -1185,14 +1185,19 @@ document.getElementById('formSave').addEventListener('click', async () => {
     const idAUsar = editandoId ? editandoId : Date.now();
     let uploadedUrls = [];
 
-    // SI HAY FOTOS PENDIENTES, LAS SUBIMOS A FIREBASE STORAGE
+    // SI HAY FOTOS PENDIENTES, VERIFICAMOS SI SON NUEVAS O VIEJAS
     if (pendingPhotos.length > 0) {
       for (let i = 0; i < pendingPhotos.length; i++) {
-        // Creamos una ruta única en tu disco duro para cada foto
-        const fileRef = storage.ref(`memories/${idAUsar}/foto_${i}_${Date.now()}.jpg`);
-        await fileRef.putString(pendingPhotos[i], 'data_url'); // Sube el archivo
-        const url = await fileRef.getDownloadURL(); // Obtenemos el link de internet
-        uploadedUrls.push(url);
+        if (pendingPhotos[i].startsWith('http')) {
+          // Ya es un link de la nube, simplemente lo conservamos
+          uploadedUrls.push(pendingPhotos[i]);
+        } else {
+          // Es una foto nueva (Base64), la subimos a Storage
+          const fileRef = storage.ref(`memories/${idAUsar}/foto_${i}_${Date.now()}.jpg`);
+          await fileRef.putString(pendingPhotos[i], 'data_url'); 
+          const url = await fileRef.getDownloadURL(); 
+          uploadedUrls.push(url);
+        }
       }
     }
 
