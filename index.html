@@ -1164,22 +1164,7 @@ document.getElementById('fPhoto').addEventListener('change', async function() {
   pendingPhotos = await Promise.all(files.map(file => {
     return new Promise(resolve => resizeImage(file, resolve));
   }));
-
-  // Mostramos la primera como portada
-  preview.src = pendingPhotos[0];
-  preview.style.display = 'block';
-  placeholder.style.display = 'none';
-
-  if(pendingPhotos.length > 1) {
-    let badge = document.getElementById('photoCountBadge') || document.createElement('div');
-    badge.id = 'photoCountBadge';
-    badge.style.cssText = 'position:absolute; bottom:10px; right:10px; background:rgba(167,139,250,0.9); color:white; padding:4px 8px; border-radius:10px; font-size:12px; font-weight:bold; z-index:10;';
-    document.getElementById('uploadArea').appendChild(badge);
-    badge.innerText = `+${pendingPhotos.length - 1} fotos`;
-    badge.style.display = 'block';
-  }
-});
-  
+ 
 
   // Mostramos la primera como portada
   preview.src = pendingPhotos[0];
