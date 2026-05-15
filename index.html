@@ -567,7 +567,7 @@ input[type=date].form-input { color-scheme: dark; }
     <div class="form-group">
       <label class="form-label">Foto (opcional)</label>
       <div class="upload-area" id="uploadArea">
-        <input type="file" accept="image/*" id="fPhoto" aria-label="Subir foto">
+        <input type="file" accept="image/*" id="fPhoto" multiple aria-label="Subir fotos">
         <div id="uploadPlaceholder">
           <span class="upload-icon">📷</span>
           <p class="upload-hint">Tocá para elegir una foto<br><span style="font-size:10px; opacity:0.6">JPG, PNG, WEBP · máx. recomendado 5 MB</span></p>
@@ -584,6 +584,7 @@ input[type=date].form-input { color-scheme: dark; }
 
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
   
 <script>
 // ═══════════════════════════════════════════
@@ -1207,46 +1208,6 @@ document.getElementById('formSave').addEventListener('click', async () => {
     // Devolvemos el botón a la normalidad
     saveBtn.innerText = "Agregar estrella ✦";
     saveBtn.disabled = false;
-  }
-});
-
-document.getElementById('formSave').addEventListener('click', () => {
-  const title = document.getElementById('fTitle').value.trim();
-  const date  = document.getElementById('fDate').value;
-  const desc  = document.getElementById('fDesc').value.trim();
-  const starType = document.getElementById('fType').value;
-  
-  if (!title || !date) return;
-
-  if (editandoId) {
-    // ACTUALIZAR EN LA NUBE
-    db.collection("memories").doc(editandoId.toString()).update({
-      title: title,
-      date: date,
-      description: desc,
-      photo: pendingPhoto,
-      starType: starType
-    }).then(() => {
-      editandoId = null;
-      closeForm();
-    });
-  } else {
-    // CREAR NUEVO EN LA NUBE
-    const pos = generatePosition(memories);
-    const newId = Date.now();
-    const newMem = {
-      id: newId,
-      title, date, description: desc,
-      photo: pendingPhoto || null,
-      px: pos.px, py: pos.py,
-      starType: starType
-    };
-    
-    // Guardamos el documento usando su ID como nombre
-    db.collection("memories").doc(newId.toString()).set(newMem).then(() => {
-      closeForm();
-      playSound('create');
-    });
   }
 });
 
