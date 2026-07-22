@@ -863,6 +863,20 @@ function renderConstellation(newId) {
   const W = window.innerWidth, H = window.innerHeight;
   const sorted = [...memories].sort((a, b) => new Date(a.date) - new Date(b.date));
 
+  // --- NUEVO: SISTEMA DE LÍNEA DE TIEMPO (CERO CRUCES) ---
+  // Ignoramos las posiciones aleatorias de la base de datos y calculamos una ruta
+  // estricta de izquierda a derecha. Como X siempre avanza, NUNCA se cruzan.
+  sorted.forEach((m, idx) => {
+    const isMobile = W < 768;
+    const stepX = isMobile ? 0.35 : 0.22; // Cuánto avanza a la derecha por cada estrella
+    
+    m.renderPx = 0.15 + (idx * stepX);
+    
+    // Para que no sea una línea recta aburrida, usamos una oscilación matemática 
+    // que la hace subir y bajar de forma armónica simulando una constelación.
+    m.renderPy = 0.5 + (Math.sin(idx * 2.3) * 0.28) + (Math.cos(idx * 0.9) * 0.12);
+  });
+
   //document.getElementById('emptyHint').style.opacity = sorted.length === 0 ? '1' : '0';
   if (datosCargados && sorted.length === 0) {
     document.getElementById('emptyHint').style.opacity = '1';
@@ -873,8 +887,8 @@ function renderConstellation(newId) {
   const edges = buildEdges(sorted);
   edges.forEach(([i, j], edgeIdx) => {
     const a = sorted[i], b = sorted[j];
-    const x1 = a.px * W, y1 = a.py * H;
-    const x2 = b.px * W, y2 = b.py * H;
+    const x1 = a.renderPx * W, y1 = a.renderPy * H;
+    const x2 = b.renderPx * W, y2 = b.renderPy * H;
     const len = Math.hypot(x2 - x1, y2 - y1);
 
     // Línea de brillo: sin filter individual — el drop-shadow del grupo cubre el efecto
@@ -897,7 +911,7 @@ function renderConstellation(newId) {
   });
 
   sorted.forEach((m, idx) => {
-    const x = m.px * W, y = m.py * H;
+    const x = m.renderPx * W, y = m.renderPy * H;
     const isNew = m.id === newId;
 
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
