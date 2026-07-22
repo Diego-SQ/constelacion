@@ -1,4 +1,4 @@
-const CACHE_NAME = 'constelacion-v4'; // Le subimos la versión
+const CACHE_NAME = 'constelacion-v5'; // Le subimos la versión
 const urlsToCache = [
   './index.html',
   './manifest.json'
