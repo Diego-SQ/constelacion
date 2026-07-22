@@ -847,32 +847,9 @@ function generatePosition(existing) {
 function buildEdges(sorted) {
   if (sorted.length < 2) return [];
   const edges = [];
-  const edgeSet = new Set(); // Búsqueda instantánea O(1)
-
-  function addEdge(i, j) {
-    const u = Math.min(i, j), v = Math.max(i, j);
-    const key = `${u}-${v}`;
-    if (!edgeSet.has(key)) {
-      edgeSet.add(key);
-      edges.push([u, v]);
-    }
-  }
-
-  for (let i = 0; i < sorted.length - 1; i++) addEdge(i, i + 1);
-
-  if (sorted.length >= 4) {
-    const W = window.innerWidth, H = window.innerHeight;
-    for (let i = 0; i < sorted.length; i++) {
-      let nearDist = Infinity, nearIdx = -1;
-      for (let j = 0; j < sorted.length; j++) {
-        if (j === i || j === i - 1 || j === i + 1) continue;
-        const d = Math.hypot((sorted[i].px - sorted[j].px) * W, (sorted[i].py - sorted[j].py) * H);
-        if (d < nearDist && d < Math.min(W, H) * 0.32) {
-          nearDist = d; nearIdx = j;
-        }
-      }
-      if (nearIdx !== -1) addEdge(i, nearIdx);
-    }
+  // Conecta estrictamente en orden cronológico: 0 con 1, 1 con 2, etc.
+  for (let i = 0; i < sorted.length - 1; i++) {
+    edges.push([i, i + 1]);
   }
   return edges;
 }
@@ -1413,6 +1390,23 @@ svg.addEventListener('touchstart', (e) => {
       e.touches[0].clientY - e.touches[1].clientY
     );
     initialZoomStart = mapZoom;
+  }
+}, { passive: false });
+
+window.addEventListener('touchmove', (e) => {
+  if (isDraggingMap && e.touches.length === 1) {
+    mapX = e.touches[0].clientX - startMapX;
+    mapY = e.touches[0].clientY - startMapY;
+    scheduleMapUpdate();
+  } else if (e.touches.length === 2 && initialPinchDist) {
+    e.preventDefault(); 
+    const currentDist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    mapZoom = initialZoomStart * (currentDist / initialPinchDist);
+    mapZoom = Math.max(0.3, Math.min(mapZoom, 4));
+    scheduleMapUpdate();
   }
 }, { passive: false });
 
